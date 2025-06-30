@@ -7,49 +7,80 @@
 
 ### What I Did
 
+- Created IAM policies specifically for VPC Flow Logs
+- Assigned an IAM role with permissions to publish to CloudWatch Logs (only usable by VPC Flow Logs)
 - Enabled VPC Flow Logs for my VPC and directed logs to a new CloudWatch log group
 - Created a test EC2 instance in a public subnet
 - Ran multiple ping tests:
-  - Pinged another EC2 instance using its **private IP** — worked
-  - Pinged its **public IP** from inside AWS — did not work (as expected)
-  - Pinged the public IP from my **laptop** — initially failed
+  - Pinged another EC2 instance using its **private IP** —  worked
+  - Pinged its **public IP** from inside AWS —  did not work (expected)
+  - Pinged the public IP from my **laptop** —  initially failed
   - Updated EC2’s **security group** to allow **All ICMP - IPv4** from `0.0.0.0/0`
-  - Ping from my laptop to EC2’s public IP succeeded after that
-- Went to CloudWatch → Log Groups → Viewed the flow log stream
-- Used built-in CloudWatch queries and filters (like `event`, `accept`, `action`) to inspect traffic and confirm log capture behavior
+  -  Ping from my laptop to EC2’s public IP succeeded after that
+- Opened CloudWatch → Log Groups → Viewed the flow log stream
+- Used CloudWatch Logs Insights to query and analyze traffic patterns
 
 ---
 
 ### Step-by-Step Instructions
 
-1. **Enable VPC Flow Logs**
+1. **Create IAM Role for Flow Logs**
+   - Go to **IAM > Roles > Create role**
+   - Use **VPC Flow Logs** as the trusted service
+   - Attach a custom policy (or `AWSFlowLogs` managed policy)
+   - Example permission:
+     {
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+
+2. **Enable VPC Flow Logs**
    - Go to **VPC Dashboard > Your VPCs > Select VPC > Flow Logs tab**
    - Click **Create flow log**
    - Destination: **Send to CloudWatch Logs**
-   - Create a new log group (e.g. `/vpc-flow-logs-project7`)
-   - IAM Role: Auto-create or select an existing role
+   - Select the IAM role created above
+   - Create or select a log group (e.g. `/vpc-flow-logs-project7`)
 
-2. **Launch EC2 Instances**
+3. **Launch EC2 Instances**
    - Ensure at least one EC2 is in a **public subnet** with a **public IP**
-   - Attach appropriate security groups
+   - Use default Amazon Linux 2023, `t2.micro`
+   - Attach a security group with minimal rules (HTTP/ICMP)
 
-3. **Run Connectivity Tests**
-   - From EC2: `ping [private IP]` → Should work
-   - From EC2: `ping [public IP]` → Will not work inside AWS
-   - From your laptop: `ping [public IP]` → Won’t work unless security group allows ICMP
-   - Fix by adding:
-     - Inbound Rule: `All ICMP - IPv4` from `0.0.0.0/0`
+4. **Test Connectivity**
+   - From EC2: `ping [private IP]` →  works
+   - From EC2: `ping [public IP]` →  doesn't work inside VPC (expected)
+   - From laptop: `ping [public IP]` → initially failed
+   - Updated the EC2's **security group** to allow:
+     - **Type**: All ICMP - IPv4
+     - **Source**: `0.0.0.0/0`
+   - Retested from laptop —  now works
 
-4. **View Logs in CloudWatch**
-   - Go to **CloudWatch > Log groups > Your VPC flow log group**
-   - Select the latest **log stream**
-   - Use **CloudWatch Logs Insights** to run queries like:
-     'stats sum(bytes) as bytesTransferred by srcAddr, dstAddr
+5. **Analyze Logs in CloudWatch**
+   - Go to **CloudWatch > Log Groups > Your log group**
+   - View **log stream** tied to the ENI
+   - Use **Log Insights** to run queries like:
+     ```sql
+     stats sum(bytes) as bytesTransferred by srcAddr, dstAddr
      | sort bytesTransferred desc
-     | limit 10'
+     | limit 10
+     ```
+   - Observed both **ACCEPT** and **REJECT** actions for traffic
 
 ---
 
 ### Summary
 
-In this project, I learned how to enable flow logs to monitor traffic in and out of my VPC. I saw how traffic is logged based on security group settings and verified that ping attempts (both successful and blocked) are reflected in CloudWatch. It was a great hands-on way to understand network observability in AWS.
+This project taught me how to enable and configure VPC Flow Logs to monitor network traffic. I created IAM policies and roles to allow secure log publishing to CloudWatch. I tested multiple ping scenarios and saw how flow logs reflect network behavior depending on security group rules. This gave me hands-on experience in AWS network observability and troubleshooting.
