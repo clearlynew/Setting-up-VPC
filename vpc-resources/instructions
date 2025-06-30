@@ -20,9 +20,9 @@
 
 #### 1. Launch EC2 in Public Subnet
 - Go to **EC2 Dashboard > Launch Instance**
-- AMI: Amazon Linux 2 t
+- AMI: Amazon Linux t2.micro
 - Network: `My-VPC`
-- Subnet: `PublicSubnet`
+- Subnet: `Public-Subnet`
 - Auto-assign public IP: Enabled
 - Security Group: **Use existing** (allows HTTP on port 80)
 - Key Pair: Select or create one
@@ -30,16 +30,15 @@
 
 #### 2. Launch EC2 in Private Subnet
 - Launch another instance using the same AMI and key pair
-- Network: `MyCustomVPC`
-- Subnet: `PrivateSubnet`
+- Network: `My-VPC`
+- Subnet: `Private-Subnet`
 - Auto-assign public IP: Disabled
 - **Create a new security group**:
   - Add custom rules (e.g., allow traffic from public subnet)
 - Launch
 
 #### 3. Create a Second VPC Using the Wizard
-- Go to **VPC Dashboard > Launch VPC Wizard**
-- Choose: **VPC with Public and Private Subnets**
+- Go to **VPC Dashboard > Launch VPC and more**
 - Specify:
   - VPC CIDR (e.g., `10.0.0.0/16`)
   - Subnet CIDRs or leave as default
