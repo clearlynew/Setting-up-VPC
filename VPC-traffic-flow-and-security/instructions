@@ -1,0 +1,67 @@
+## Project 2: VPC Traffic Flow and Security
+
+**Goal:** Control how traffic flows in and out of the VPC using route tables, network ACLs, and security groups.  
+**Time Taken:** ~1 hour
+
+---
+
+### What I Did
+
+- Created a custom route table and associated it with the public subnet
+- Added a route to `0.0.0.0/0` pointing to the internet gateway
+- Created a network ACL allowing all inbound and outbound traffic
+- Created a security group that allows inbound HTTP (port 80) traffic
+
+---
+
+### Step-by-Step Instructions
+
+1. **Create and Configure Route Table**
+   - Go to "Route Tables" > "Create route table"
+   - Name: `PublicRouteTable`  
+   - VPC: `My-VPC`  
+   - Click "Create"
+   - Select the route table > go to "Routes" > "Edit routes"
+     - Add route:
+       - Destination: `0.0.0.0/0`
+       - Target: your Internet Gateway 
+     - Save
+   - Go to "Subnet Associations" > "Edit subnet associations"
+     - Select `PublicSubnet`
+     - Save
+
+2. **Create Network ACL**
+   - Go to "Network ACLs" > "Create Network ACL"
+   - Name: `my-acl-1`  
+   - VPC: `My-VPC`  
+   - Click "Create"
+   - Select the NACL > "Inbound Rules" > "Edit inbound rules"
+     - Rule #: 100  
+     - Type: All traffic  
+     - Protocol: All  
+     - Port range: All  
+     - Source: `0.0.0.0/0`  
+     - Allow
+   - Go to "Outbound Rules" > "Edit outbound rules"
+     - Same settings as above, but for **Destination: `0.0.0.0/0`**
+   - Go to "Subnet Associations" > "Edit"
+     - Select `PublicSubnet`  
+     - Save
+
+3. **Create Security Group**
+   - Go to "Security Groups" > "Create security group"
+   - Name: `security-group-1`
+   - VPC: `My-VPC`
+   - Inbound Rules:
+     - Type: HTTP  
+     - Protocol: TCP  
+     - Port Range: 80  
+     - Source: `0.0.0.0/0`
+   - Outbound Rules: Keep default (All traffic allowed)
+   - Save
+
+---
+
+### Summary
+
+This project helped me understand how traffic is controlled in AWS networking. I used route tables for traffic direction, a network ACL to allow all traffic through the subnet, and a security group to allow only HTTP traffic to reach instances. The subnet is now ready to host publicly accessible web servers.
