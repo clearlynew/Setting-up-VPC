@@ -14,12 +14,12 @@
 * Connected to the EC EC2 instance using EC2 Instance Connect.
 * Attempted `aws s3 ls` and observed a credentials error, as expected.
 * Generated new IAM access keys (Access Key ID and Secret Access Key) for my AWS user.
-* Configured the AWS CLI within the EC2 instance using `aws configure`, providing the new access keys and specifying the `ap-south-1` region (or `us-east-1` as shown in logs).
-* Created a new S3 bucket named `nextwork-vpc-project-hima`.
+* Configured the AWS CLI within the EC2 instance using `aws configure`, providing the new access keys and specifying the  region `us-east-1.
+* Created a new S3 bucket named `network-vpc-project-hima`.
 * Uploaded two initial files to the S3 bucket via the AWS S3 console.
-* Verified bucket contents from the EC2 instance using `aws s3 ls` and `aws s3 ls s3://nextwork-vpc-project-hima`.
+* Verified bucket contents from the EC2 instance using `aws s3 ls` and `aws s3 ls s3://network-vpc-project-hima`.
 * Created a dummy local file (`/tmp/test.txt`) on the EC2 instance.
-* Uploaded the local file to the S3 bucket using the AWS CLI: `aws s3 cp /tmp/test.txt s3://nextwork-vpc-project-hima`.
+* Uploaded the local file to the S3 bucket using the AWS CLI: `aws s3 cp /tmp/test.txt s3://network-vpc-project-hima`.
 * Confirmed the successful upload of `test.txt` by checking the S3 console.
 
 ---
@@ -89,7 +89,7 @@ Follow these steps to replicate the project:
     * When prompted, enter the following:
         * `AWS Access Key ID [None]:` Paste your copied Access Key ID 
         * `AWS Secret Access Key [None]:` Paste your copied Secret Access Key 
-        * `Default region name [None]:` Enter `ap-south-1` (or `us-east-1` if that's where your S3 bucket will be located).
+        * `Default region name [None]:` Enter `us-east-1`.
         * `Default output format [None]:` Press Enter to leave blank (or type `json` if preferred).
 
 ### 5. Create & Upload to S3 Bucket
@@ -111,7 +111,7 @@ Follow these steps to replicate the project:
     * Back in your EC2 terminal, run the following commands to list buckets and then objects in your specific bucket:
         ```bash
         aws s3 ls
-        aws s3 ls s3://nextwork-vpc-project-hima
+        aws s3 ls s3://network-vpc-project-hima
         ```
         *Expected Output (example):*
         ```
@@ -127,17 +127,17 @@ Follow these steps to replicate the project:
         ```
     * Upload this file to your S3 bucket using the AWS CLI:
         ```bash
-        aws s3 cp /tmp/test.txt s3://nextwork-vpc-project-hima
+        aws s3 cp /tmp/test.txt s3://network-vpc-project-hima
         ```
         *Expected Output:*
         ```
-        upload: ../../tmp/test.txt to s3://nextwork-vpc-project-hima/test.txt
+        upload: ../../tmp/test.txt to s3://network-vpc-project-hima/test.txt
         ```
 
 5.  **Final Verification:**
     * List the bucket contents again from the EC2 terminal to confirm `test.txt` is present:
         ```bash
-        aws s3 ls s3://nextwork-vpc-project-hima
+        aws s3 ls s3://network-vpc-project-hima
         ```
         *Expected Output (example):*
         ```
