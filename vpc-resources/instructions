@@ -1,0 +1,56 @@
+## Project 4: Launching VPC Resources
+
+**Goal:** Launch EC2 instances in both public and private subnets within a custom VPC, and explore AWS’s VPC Wizard.  
+**Time Taken:** ~30 minutes
+
+---
+
+### What I Did
+
+- Launched two EC2 instances in my manually created VPC:
+  - **Public EC2 instance** in the public subnet (with auto-assign public IP)
+  - **Private EC2 instance** in the private subnet (no public IP)
+- **Created a new security group** for the private EC2 instance with custom rules
+- **Used the existing security group** (that allows HTTP) for the public EC2 instance
+- Additionally, created a second VPC using the **Amazon VPC Wizard** to explore automated VPC setup
+
+---
+
+### Step-by-Step Instructions
+
+#### 1. Launch EC2 in Public Subnet
+- Go to **EC2 Dashboard > Launch Instance**
+- AMI: Amazon Linux 2 t
+- Network: `My-VPC`
+- Subnet: `PublicSubnet`
+- Auto-assign public IP: Enabled
+- Security Group: **Use existing** (allows HTTP on port 80)
+- Key Pair: Select or create one
+- Launch
+
+#### 2. Launch EC2 in Private Subnet
+- Launch another instance using the same AMI and key pair
+- Network: `MyCustomVPC`
+- Subnet: `PrivateSubnet`
+- Auto-assign public IP: Disabled
+- **Create a new security group**:
+  - Add custom rules (e.g., allow traffic from public subnet)
+- Launch
+
+#### 3. Create a Second VPC Using the Wizard
+- Go to **VPC Dashboard > Launch VPC Wizard**
+- Choose: **VPC with Public and Private Subnets**
+- Specify:
+  - VPC CIDR (e.g., `10.0.0.0/16`)
+  - Subnet CIDRs or leave as default
+- AWS automatically creates:
+  - A new VPC with public and private subnets
+  - An internet gateway, NAT gateway, and route tables
+- **No EC2 instances launched in this VPC yet*
+  - customize resouces as needed
+
+---
+
+### Summary
+
+In this project, I launched EC2 instances into both public and private subnets of my manually created VPC, applying different security groups to each. I also used the VPC Wizard to create a second VPC automatically, helping me understand the differences between manual and wizard-based network setups.
