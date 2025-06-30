@@ -1,0 +1,154 @@
+# Project 8: Access S3 from a VPC
+
+**Goal:** This project demonstrates how to access an Amazon S3 bucket from an EC2 instance running within a Virtual Private Cloud (VPC), utilizing IAM access keys and the AWS Command Line Interface (CLI).
+
+**Time Taken:** ~45 minutes
+
+---
+
+## What I Did
+
+* Created a VPC named `NextWork` with one public subnet using the “VPC and more” wizard.
+* Launched an Amazon Linux 2023 EC2 instance into the public subnet with auto-assign public IP enabled.
+* Configured a new security group for the EC2 instance, allowing default SSH access.
+* Connected to the EC EC2 instance using EC2 Instance Connect.
+* Attempted `aws s3 ls` and observed a credentials error, as expected.
+* Generated new IAM access keys (Access Key ID and Secret Access Key) for my AWS user.
+* Configured the AWS CLI within the EC2 instance using `aws configure`, providing the new access keys and specifying the `ap-south-1` region (or `us-east-1` as shown in logs).
+* Created a new S3 bucket named `nextwork-vpc-project-hima`.
+* Uploaded two initial files to the S3 bucket via the AWS S3 console.
+* Verified bucket contents from the EC2 instance using `aws s3 ls` and `aws s3 ls s3://nextwork-vpc-project-hima`.
+* Created a dummy local file (`/tmp/test.txt`) on the EC2 instance.
+* Uploaded the local file to the S3 bucket using the AWS CLI: `aws s3 cp /tmp/test.txt s3://nextwork-vpc-project-hima`.
+* Confirmed the successful upload of `test.txt` by checking the S3 console.
+
+---
+
+## Step-by-Step Instructions
+
+Follow these steps to replicate the project:
+
+### 1. Create the VPC
+
+1.  Navigate to **VPC** in the AWS Management Console.
+2.  Click **Create VPC**.
+3.  Choose the **VPC and more** wizard.
+4.  For **Name**, enter `NextWork`.
+5.  Set **IPv4 CIDR block** to `10.0.0.0/16`.
+6.  Configure **Availability Zones (AZs)**: `1`
+7.  Configure **Public subnets**: `1`
+8.  Configure **Private subnets**: `0`
+9.  Select **NAT gateways**: `None`
+10. Select **VPC endpoints**: `None`
+11. Leave DNS options (`DNS hostnames`, `DNS resolution`) enabled (default).
+12. Click **Create VPC**.
+
+### 2. Launch EC2 Instance
+
+1.  Go to **EC2** in the AWS Management Console.
+2.  Click **Launch Instance**.
+3.  For **Name**, enter `Instance - NextWork VPC Project`.
+4.  Choose **Amazon Machine Image (AMI)**: `Amazon Linux 2023`.
+5.  Select **Instance type**: `t2.micro`.
+6.  For **Key pair (login)**: Choose `Proceed without a key pair` (or select an existing one if you prefer).
+7.  Under **Network settings**:
+    * **VPC**: Select `NextWork VPC`.
+    * **Subnet**: Choose the public subnet within `NextWork VPC`.
+    * **Auto-assign public IP**: Ensure this is **Enabled**.
+    * **Firewall (security groups)**: Select `Create security group`.
+        *leave everything as default
+8.  Click **Launch instance**.
+
+### 3. Connect to EC2 Instance
+
+1.  Once the EC2 instance state is `Running`, select it in the EC2 console.
+2.  Click **Connect**.
+3.  Choose the **EC2 Instance Connect** tab and click **Connect**.
+4.  In the terminal window, run the following command:
+    ```bash
+    aws s3 ls
+    ```
+    *Expected Output:* You will receive an error like `Unable to locate credentials. You can configure credentials by running "aws configure".`
+
+### 4. Configure IAM Access Keys
+
+1.  **Create Access Keys:**
+    * Go to **IAM** in the AWS Management Console.
+    * In the navigation pane, click **Users**, then select your specific IAM user (not the root user).
+    * Go to the **Security credentials** tab.
+    * Under "Access keys", click **Create access key**.
+    * Select **Command Line Interface (CLI)** as the use case and acknowledge the warning.
+    * Click **Create access key**.
+    * **IMPORTANT:** Copy both the **Access Key ID** and **Secret Access Key** immediately. This is the only time the Secret Access Key will be displayed. Store them securely.
+
+2.  **Configure AWS CLI on EC2 Instance:**
+    * Back in your EC2 Instance Connect terminal, run:
+        ```bash
+        aws configure
+        ```
+    * When prompted, enter the following:
+        * `AWS Access Key ID [None]:` Paste your copied Access Key ID 
+        * `AWS Secret Access Key [None]:` Paste your copied Secret Access Key 
+        * `Default region name [None]:` Enter `ap-south-1` (or `us-east-1` if that's where your S3 bucket will be located).
+        * `Default output format [None]:` Press Enter to leave blank (or type `json` if preferred).
+
+### 5. Create & Upload to S3 Bucket
+
+1.  **Create S3 Bucket:**
+    * Go to **S3** in the AWS Management Console.
+    * Click **Create bucket**.
+    * For **Bucket name**, enter `nextwork-vpc-project-hima` (or another unique name).
+    * Choose your preferred **AWS Region**.
+    * Leave other settings as default for this project.
+    * Click **Create bucket**.
+
+2.  **Upload Files via Console:**
+    * Navigate into your newly created S3 bucket.
+    * Click **Upload**.
+    * Add two small files from your local system and upload them.
+
+3.  **Verify S3 Access and Upload via CLI:**
+    * Back in your EC2 terminal, run the following commands to list buckets and then objects in your specific bucket:
+        ```bash
+        aws s3 ls
+        aws s3 ls s3://nextwork-vpc-project-hima
+        ```
+        *Expected Output (example):*
+        ```
+        2025-06-30 14:04:21 nextwork-vpc-project-hima
+        2025-06-30 14:05:52      54630 Screenshot 2024-02-13 100252.png
+        2025-06-30 14:05:54     151728 Screenshot 2024-02-13 100418.png
+        ```
+
+4.  **Create and Upload Local File:**
+    * Create a dummy file on the EC2 instance:
+        ```bash
+        sudo touch /tmp/test.txt
+        ```
+    * Upload this file to your S3 bucket using the AWS CLI:
+        ```bash
+        aws s3 cp /tmp/test.txt s3://nextwork-vpc-project-hima
+        ```
+        *Expected Output:*
+        ```
+        upload: ../../tmp/test.txt to s3://nextwork-vpc-project-hima/test.txt
+        ```
+
+5.  **Final Verification:**
+    * List the bucket contents again from the EC2 terminal to confirm `test.txt` is present:
+        ```bash
+        aws s3 ls s3://nextwork-vpc-project-hima
+        ```
+        *Expected Output (example):*
+        ```
+        2025-06-30 14:05:52      54630 Screenshot 2024-02-13 100252.png
+        2025-06-30 14:05:54     151728 Screenshot 2024-02-13 100418.png
+        2025-06-30 14:14:53          0 test.txt
+        ```
+    * Optionally, check the S3 console to visually confirm the `test.txt` file is in your bucket.
+
+---
+
+## Summary
+
+This project successfully demonstrated how to establish access from an EC2 instance within a VPC to an S3 bucket using the AWS CLI and IAM access keys. By configuring the `aws configure` command with explicit credentials, I was able to create an S3 bucket, upload files via the console, and then interact with it programmatically from the EC2 terminal – including listing existing objects and uploading a new file. This hands-on exercise provided practical experience with secure, manual interaction with AWS services from inside a custom VPC environment.
