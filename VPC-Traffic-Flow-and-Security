@@ -1,0 +1,62 @@
+## Project 2: VPC Traffic Flow and Security
+
+**Goal:** Control traffic in your VPC by configuring a route table, a network ACL, and a security group.  
+**Time Taken:** ~20 mins
+
+---
+
+### Step-by-Step Instructions
+
+#### 1. Create and Configure Route Table
+- Go to **VPC Dashboard > Route Tables > Create route table**
+- Name: `PublicRouteTable`
+- Select your custom VPC
+- Click **Create**
+- Select the new route table > go to **Routes > Edit routes**
+  - Add route:
+    - Destination: `0.0.0.0/0`
+    - Target: your Internet Gateway (e.g., `igw-xxxxxx`)
+  - Save
+- Go to **Subnet associations > Edit subnet associations**
+  - Select your public subnet
+  - Save
+
+#### 2. Create Network ACL (NACL)
+- Go to **Network ACLs > Create Network ACL**
+- Name: `my-acl-1`
+- Select your custom VPC
+- Click **Create**
+- Select the NACL > go to **Inbound Rules > Edit inbound rules**
+  - Rule #: 100  
+  - Type: All traffic  
+  - Protocol: All  
+  - Port range: All  
+  - Source: `0.0.0.0/0`  
+  - Allow
+- Go to **Outbound Rules > Edit outbound rules**
+  - Same as above but with **Destination: 0.0.0.0/0**
+- Go to **Subnet associations > Edit**
+  - Associate it with your public subnet
+
+#### 3. Configure Security Group
+- Go to **EC2 Dashboard > Security Groups > Create Security Group**
+- Name: `security-group-1`
+- Select your custom VPC
+- Inbound rules:
+  - Type: **HTTP**
+  - Protocol: TCP
+  - Port: 80
+  - Source: `0.0.0.0/0`
+- Outbound rules: Keep default (all allowed)
+- Attach this security group to any EC2 instance you launch in the public subnet
+
+---
+
+### Summary
+
+This setup ensures that:
+- The subnet routes internet traffic through the internet gateway
+- The NACL allows all traffic in and out
+- The security group allows public HTTP access (port 80)
+
+My VPC is now ready to host web-accessible EC2 instances.
