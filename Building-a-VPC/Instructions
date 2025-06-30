@@ -1,0 +1,47 @@
+## Project 1: Build a Virtual Private Cloud (VPC)
+
+**Goal:** Create the foundation of your AWS network with a custom VPC, one public subnet, and internet access.  
+**Time Taken:** ~15 minutes
+
+---
+
+### What I Did
+
+- Created a custom VPC with the CIDR block `10.0.0.0/16`
+- Created one subnet in an Availability Zone (e.g., `10.0.1.0/24`)
+- Enabled auto-assign public IPv4 addresses for the subnet
+- Created and attached an internet gateway to the VPC
+- Associated the subnet with a route table that routes traffic to the internet gateway
+
+---
+
+### Step-by-Step Instructions
+
+1. **Create VPC**
+   - Go to VPC Dashboard > "Your VPCs" > "Create VPC"
+   - Name: `My-VPC`
+   - IPv4 CIDR block: `10.0.0.0/16`
+   - Leave IPv6 and tenancy as default
+   - Click "Create VPC"
+
+2. **Create Subnet**
+   - Go to "Subnets" > "Create Subnet"
+   - VPC: `MyCustomVPC`
+   - Subnet name: `Public-1`
+   - AZ: choose one (e.g., `ap-south-1a`)
+   - IPv4 CIDR block: `10.0.1.0/24`
+   - Click "Create Subnet"
+
+3. **Enable Auto-Assign Public IP**
+   - Select the subnet > "Actions" > "Modify auto-assign IP settings"
+   - Enable "Auto-assign IPv4 address"
+   - Save changes
+
+4. **Create and Attach Internet Gateway**
+   - Go to "Internet Gateways" > "Create internet gateway"
+   - Name: `My-internet-gateway`
+   - Create and attach to `My-VPC`
+
+### Summary
+
+This project helped me understand the basic building blocks of a VPC in AWS. I created a custom VPC, a public subnet, and enabled internet connectivity through an internet gateway.
