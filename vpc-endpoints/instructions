@@ -1,0 +1,217 @@
+# Project 9: Access S3 from a VPC (with VPC Endpoints)
+
+**Goal:** This project focuses on securely connecting an EC2 instance within a VPC directly to an S3 bucket using a VPC Endpoint, bypassing the public internet. This enhances security, reduces data transfer costs, and improves performance.
+
+**Time Taken:** ~45 minutes
+
+---
+
+## What I Did
+
+* Created a custom VPC named `NextWork` with a single public subnet.
+* Launched an Amazon Linux 2023 EC2 instance (`Instance - NextWork VPC Endpoints`) into the public subnet, configured for EC2 Instance Connect.
+* Set up an S3 bucket named `network-vpc-endpoints-hima` and uploaded two test files to it via the S3 console.
+* Connected to the EC2 instance using EC2 Instance Connect and attempted `aws s3 ls`, which initially failed due to missing credentials.
+* Generated IAM access keys (Access Key ID and Secret Access Key) for my AWS user.
+* Configured the AWS CLI on the EC2 instance using `aws configure` with the new access keys and region.
+* Successfully listed S3 buckets and objects from the EC2 instance via the internet, and uploaded a new file (`/tmp/nextwork.txt`) using `aws s3 cp`.
+* Created a **VPC Gateway Endpoint for S3**, linking my `NextWork-vpc` directly to the S3 service.
+* Configured a **highly restrictive S3 Bucket Policy** to deny all access to the bucket unless the traffic originated from the newly created VPC endpoint (`aws:sourceVpce`). This initially blocked console access to the bucket.
+* Attempted to access the S3 bucket from the EC2 instance again, which initially *failed* despite the endpoint.
+* **Troubleshooted** by investigating the public subnet's route table, discovering the need to explicitly associate the route table with the VPC endpoint.
+* After updating the route table, successfully accessed the S3 bucket from the EC2 instance, confirming the private endpoint connection.
+* Demonstrated granular control by temporarily modifying the VPC endpoint policy to `Deny` all access, and then reverting it back to `Allow`.
+
+---
+
+## Step-by-Step Instructions
+
+### 1. Set up Your Architecture
+
+#### ☁️ Create Your VPC
+
+1.  Go to the **VPC** console > **Your VPCs**.
+2.  Click **Create VPC**.
+3.  Select **VPC and more**.
+4.  Under **Name tag auto-generation**, enter `NextWork`.
+5.  Keep **IPv4 CIDR block** as `10.0.0.0/16`.
+6.  Keep **IPv6 CIDR block** as `No IPv6 CIDR block`.
+7.  Keep **Tenancy** as `Default`.
+8.  Set **Number of Availability Zones (AZs)** to `1`.
+9.  Set **Number of public subnets** to `1`.
+10. Set **Number of private subnets** to `0`.
+11. For **NAT gateways ($)**, select `None`.
+12. For **VPC endpoints**, select `None`.
+13. Leave **DNS options** checked.
+14. Click **Create VPC`.
+
+#### 💻 Launch an EC2 Instance in Your VPC
+
+1.  Go to the **EC2** console > **Instances`.
+2.  Click **Launch instances**.
+3.  For **Name**, enter `Instance - NextWork VPC Endpoints`.
+4.  For **Amazon Machine Image (AMI)**, select `Amazon Linux 2023 AMI`.
+5.  For **Instance type**, select `t2.micro`.
+6.  For **Key pair (login)**, select `Proceed without a key pair (not recommended)`.
+7.  At the **Network settings** panel, click **Edit**.
+    * Under **VPC**, select `NextWork-vpc`.
+    * Under **Subnet**, select your VPC's public subnet.
+    * Keep **Auto-assign public IP** as `Enable` (required for EC2 Instance Connect).
+    * For **Firewall (security groups)**, choose `Create security group`.
+        * Name: `SG - NextWork VPC Endpoints`.
+        * (Default rule allows SSH inbound, which is all we need).
+8.  Click **Launch instance**.
+
+#### 🪣 Launch a Bucket in Amazon S3
+
+1.  Go to the **S3** console (ensure you are in the same Region as your VPC).
+2.  Click **Create bucket**.
+3.  Keep **Bucket type** as `General purpose`.
+4.  For **Bucket name**, enter `network-vpc-endpoints-hima`.
+5.  Leave all other default settings.
+6.  Click **Create bucket`.
+7.  **Upload Files:**
+    * Click into your new bucket.
+    * Click **Upload**.
+    * Select **Add files** and upload two small files from your local computer.
+    * Click **Upload** at the bottom of the page.
+
+### 2. Connect to Your EC2 Instance
+
+1.  Go to your **EC2** console > **Instances` page.
+2.  Select the checkbox next to `Instance - NextWork VPC Endpoints`.
+3.  Click **Connect**.
+4.  On the EC2 Instance Connect setup page, click **Connect** again.
+5.  In the terminal, try running:
+    ```bash
+    aws s3 ls
+    ```
+    *Expected:* `Unable to locate credentials...` error.
+
+### 3. Create IAM Access Keys
+
+1.  In the AWS console search bar, search for `Access keys` and select the IAM console link.
+2.  In the IAM console, select **Users** from the left navigation panel, then choose your IAM Admin account.
+3.  Go to the **Security credentials** tab.
+4.  Under "Access keys", click **Create access key**.
+5.  Select **Command Line Interface (CLI)** as the use case.
+6.  Check the box `I understand the above recommendation and want to proceed to create an access key.`
+7.  Click **Create access key`.
+8.  **IMPORTANT:** Copy both the **Access Key ID** and **Secret Access Key**.
+9.  Click **Download .csv file** and save it securely.
+
+### 4. Connect to Your S3 Bucket (via CLI)
+
+1.  Go back to your EC2 Instance Connect terminal.
+2.  Run `aws configure`.
+3.  **Enter your details:**
+    * `AWS Access Key ID [None]:` Paste your copied Access Key ID.
+    * `AWS Secret Access Key [None]:` Paste your copied Secret Access Key.
+    * `Default region name [None]:` Copy and paste your AWS Region's code name (e.g., `us-west-2`, `ap-south-1`).
+    * `Default output format [None]:` Press Enter (leave blank).
+4.  **Verify S3 Access:**
+    * Run `aws s3 ls`
+        *Expected:* You should see `network-vpc-endpoints-hima` listed.
+    * Run `aws s3 ls s3://network-vpc-endpoints-hima`.
+        *Expected:* You should see your uploaded files listed.
+5.  **Upload a File via CLI:**
+    * Create a blank file on EC2:
+        ```bash
+        sudo touch /tmp/nextwork.txt
+        ```
+    * Upload the file to S3:
+        ```bash
+        aws s3 cp /tmp/nextwork.txt s3://network-vpc-endpoints-hima
+        ```
+    * Verify upload:
+        ```bash
+        aws s3 ls s3://network-vpc-endpoints-hima
+        ```
+        *Expected:* `nextwork.txt` with size `0` listed.
+    * Switch to S3 console and refresh your bucket's Objects tab to see `nextwork.txt`.
+
+### 5. Create an Endpoint
+
+1.  In a new tab, go back to your **VPC** console > **Endpoints`.
+2.  Click **Create endpoint**.
+3.  For **Name tag**, enter `NextWork VPC Endpoint`.
+4.  Keep **Service category** as `AWS services`.
+5.  In the **Services** panel, search for `S3` and select the filter result that just ends with `s3`.
+6.  Select the row with **Type** set to `Gateway`.
+7.  At the **VPC** panel, select `NextWork-vpc`.
+8.  Leave remaining default values.
+9.  Click **Create endpoint`.
+
+### 6. Create a Super Secure Bucket Policy
+
+1.  In the **S3** console, select **Buckets`.
+2.  Click into your bucket `network-vpc-endpoints-hima`.
+3.  Select the **Permissions** tab.
+4.  Scroll to the **Bucket policy** panel and click **Edit**.
+5.  Add the following bucket policy to the editor:
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Deny",
+          "Principal": "*",
+          "Action": "s3:*",
+          "Resource": [
+            "arn:aws:s3:::network-vpc-endpoints-hima",
+            "arn:aws:s3:::network-vpc-endpoints-hima/*"
+          ],
+          "Condition": {
+            "StringNotEquals": {
+              "aws:sourceVpce": "vpce-xxxxxxx"
+            }
+          }
+        }
+      ]
+    }
+    ```
+7.  Click **Save changes`.
+    *Expected:* Panels turn red, indicating console access is denied.
+
+### 7. Access Your S3 Bucket (Troubleshooting)
+
+1.  Go back to **EC2 Instance Connect**.
+2.  Run `aws s3 ls s3://network-vpc-endpoints-hima` again.
+    *Expected:* `Access denied` error.
+3.  **Troubleshoot Route Table:**
+    * Go to **VPC** console > **Subnets`.
+    * Select your public subnet (`NextWork-subnet-public1`).
+    * Select the **Route table** tab. Notice there's no direct route to the endpoint.
+    * Go to **VPC** console > **Endpoints`.
+    * Select the checkbox next to your endpoint.
+    * Select the **Route tables** tab.
+    * Click **Manage route tables`.
+    * Select the checkbox next to your public route table.
+    * Click **Modify route tables`.
+    * (Optionally, refresh the Subnets page and check the Route table tab for your public subnet to see the new route).
+
+### 8. Access Your S3 Bucket (Final Validation)
+
+1.  Go back to **EC2 Instance Connect**.
+2.  Run `aws s3 ls s3://network-vpc-endpoints-hima` again.
+    *Expected:* The bucket contents should now be listed successfully!
+
+### 9. Configure Endpoint Policy (Optional Security Test)
+
+1.  Go to **VPC** console > **Endpoints`.
+2.  Select the checkbox next to your endpoint.
+3.  Select the **Policy** tab.
+4.  Click **Edit policy`.
+5.  Change `"Effect": "Allow"` to `"Effect": "Deny"`.
+6.  Click **Save**.
+7.  Go back to **EC2 Instance Connect** and run `aws s3 ls s3://network-vpc-endpoints-hima`.
+    *Expected:* `Access denied` error (endpoint policy is blocking it).
+8.  Go back to **VPC** console > **Endpoints` > **Policy** > **Edit policy`.
+9.  Change `"Effect": "Deny"` back to `"Effect": "Allow"`.
+10. Click **Save changes`.
+
+---
+
+## Summary
+
+This project successfully demonstrated the configuration and validation of a VPC Gateway Endpoint for Amazon S3. I learned to establish private connectivity between an EC2 instance within a VPC and an S3 bucket, bypassing the public internet for enhanced security and performance. Key steps included VPC and EC2 instance setup, S3 bucket creation, AWS CLI configuration with IAM access keys, and crucially, configuring the S3 bucket policy to restrict access only through the VPC endpoint. Troubleshooting the route table association was vital to ensure the traffic flowed privately. Finally, experimenting with the endpoint's own policy showcased granular control over AWS service access. This hands-on exercise provided practical experience with secure and efficient AWS networking practices.
