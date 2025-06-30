@@ -64,7 +64,7 @@ A step-by-step collection of 9 connected AWS networking projects. These projects
 ## 8. Access S3 from a VPC  
 **Goal:** Securely connect to AWS storage services from within a VPC  
 - Access S3 from a private EC2 instance  
-- Test access with and without internet connectivity  
+- Test access with internet connectivity  
 - Understand the need for NAT Gateways or VPC Endpoints  
 
 ---
