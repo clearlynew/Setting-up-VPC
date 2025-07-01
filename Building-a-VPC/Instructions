@@ -28,7 +28,7 @@
    - Go to "Subnets" > "Create Subnet"
    - VPC: `MyCustomVPC`
    - Subnet name: `Public-1`
-   - AZ: choose one (e.g., `ap-south-1a`)
+   - AZ: choose one
    - IPv4 CIDR block: `10.0.1.0/24`
    - Click "Create Subnet"
 
